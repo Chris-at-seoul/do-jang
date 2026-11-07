@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>도장깨기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+  // ===== 서버 설정 (Supabase) =====
+  window.DOJANG_CONFIG = {
+    SUPABASE_URL: 'https://oidfjsumvnhmtutuzltu.supabase.co',
+    SUPABASE_ANON_KEY: 'sb_publishable_1mTUOVFr907AnsGTK5jp8w_m9x89Uty'  // 공개용 키 (브라우저에 노출돼도 됨)
+  };
+</script>
+<script>
+  // ===== 도장깨기 목록 =====
+  // 새 도장깨기를 추가하려면 아래 배열에 { ... } 블록을 하나 더 넣으면 탭이 자동으로 생겨요.
+  // 항목 id는 모든 탭을 통틀어 겹치면 안 돼요 (그래서 접두어 mus-, uni- 를 붙임).
+  window.COLLECTIONS = [
+    {
+      id: 'hangang', tab: '한강공원', title: '한강공원 도장깨기',
+      lede: '한강 상류에서 하류까지, 11개 공원을 하나씩 방문하고 도장을 모아보세요.',
+      done: '🎉 한강 완주! 11개 공원 도장을 모두 모았어요.',
+      items: [
+        {id:'gwangnaru', name:'광나루한강공원', en:'Gwangnaru', region:'상류 · 광나루 – 뚝섬', note:'광진교 8번가 스카이워크와 유람선 선착장이 있는 구간'},
+        {id:'jamsil',    name:'잠실한강공원',   en:'Jamsil',    region:'상류 · 광나루 – 뚝섬', note:'자연학습장과 종합운동장이 가까운 조용한 구간'},
+        {id:'ttukseom',  name:'뚝섬한강공원',   en:'Ttukseom',  region:'상류 · 광나루 – 뚝섬', note:'음악분수가 있고 서울숲으로 바로 이어지는 산책로'},
+        {id:'jamwon',    name:'잠원한강공원',   en:'Jamwon',    region:'중류 · 잠원 – 여의도', note:'나비공원과 한적한 카페거리가 있는 구간'},
+        {id:'banpo',     name:'반포한강공원',   en:'Banpo',     region:'중류 · 잠원 – 여의도', note:'달빛무지개분수와 세빛섬, 서래섬 야경'},
+        {id:'ichon',     name:'이촌한강공원',   en:'Ichon',     region:'중류 · 잠원 – 여의도', note:'노들섬, 국립중앙박물관과 맞닿아 있는 구간'},
+        {id:'yeouido',   name:'여의도한강공원', en:'Yeouido',   region:'중류 · 잠원 – 여의도', note:'밤섬 조망과 봄철 벚꽃길로 유명한 구간'},
+        {id:'yanghwa',   name:'양화한강공원',   en:'Yanghwa',   region:'하류 · 양화 – 강서',   note:'선유교로 이어지는 선유도공원과 밤섬 전망'},
+        {id:'mangwon',   name:'망원한강공원',   en:'Mangwon',   region:'하류 · 양화 – 강서',   note:'서울함공원과 망원정, 망원초록길이 있는 구간'},
+        {id:'nanji',     name:'난지한강공원',   en:'Nanji',     region:'하류 · 양화 – 강서',   note:'하늘공원·노을공원과 이어지는 캠핑 명소'},
+        {id:'gangseo',   name:'강서한강공원',   en:'Gangseo',   region:'하류 · 양화 – 강서',   note:'철새가 머무는 강서습지생태공원'}
+      ]
+    },
+    {
+      id: 'museum', tab: '국립박물관', title: '국립박물관 도장깨기',
+      lede: '국립중앙박물관과 전국 13개 소속 국립박물관, 14곳을 모두 다녀와 보세요.',
+      done: '🎉 전국 국립박물관 14곳 완주!',
+      items: [
+        {id:'mus-central',   name:'국립중앙박물관', en:'Seoul · 용산',  region:'서울', note:'반가사유상 두 점이 놓인 「사유의 방」'},
+        {id:'mus-chuncheon', name:'국립춘천박물관', en:'Chuncheon',     region:'강원 · 충청', note:'창령사 터 오백나한 전시'},
+        {id:'mus-cheongju',  name:'국립청주박물관', en:'Cheongju',      region:'강원 · 충청', note:'금속공예·청동기 문화 중심 전시'},
+        {id:'mus-gongju',    name:'국립공주박물관', en:'Gongju',        region:'강원 · 충청', note:'무령왕릉 출토 유물'},
+        {id:'mus-buyeo',     name:'국립부여박물관', en:'Buyeo',         region:'강원 · 충청', note:'백제금동대향로'},
+        {id:'mus-jeonju',    name:'국립전주박물관', en:'Jeonju',        region:'호남 · 제주', note:'조선 왕실과 전북의 역사문화'},
+        {id:'mus-iksan',     name:'국립익산박물관', en:'Iksan',         region:'호남 · 제주', note:'미륵사지·왕궁리 백제 유물'},
+        {id:'mus-gwangju',   name:'국립광주박물관', en:'Gwangju',       region:'호남 · 제주', note:'신안 해저 유물'},
+        {id:'mus-naju',      name:'국립나주박물관', en:'Naju',          region:'호남 · 제주', note:'영산강 유역 마한 대형 옹관'},
+        {id:'mus-jeju',      name:'국립제주박물관', en:'Jeju',          region:'호남 · 제주', note:'탐라의 역사와 섬 문화'},
+        {id:'mus-daegu',     name:'국립대구박물관', en:'Daegu',         region:'영남', note:'섬유·복식 문화 특화'},
+        {id:'mus-gyeongju',  name:'국립경주박물관', en:'Gyeongju',      region:'영남', note:'성덕대왕신종과 신라 금관'},
+        {id:'mus-gimhae',    name:'국립김해박물관', en:'Gimhae',        region:'영남', note:'가야 철기 문화'},
+        {id:'mus-jinju',     name:'국립진주박물관', en:'Jinju',         region:'영남', note:'임진왜란 특화 전시'}
+      ]
+    },
+    {
+      id: 'univ', tab: '서울 대학교', title: '서울 대학교 도장깨기',
+      lede: '서울에 본교가 있는 4년제 대학교 캠퍼스를 하나씩 걸어보세요.',
+      done: '🎉 서울 4년제 대학교 캠퍼스 완주!',
+      items: [
+        {id:'uni-skku',     name:'성균관대학교',   en:'인문사회캠퍼스 · 종로', region:'도심 · 서북권'},
+        {id:'uni-smu',      name:'상명대학교',     en:'서울캠퍼스 · 종로',     region:'도심 · 서북권'},
+        {id:'uni-dongguk',  name:'동국대학교',     en:'서울캠퍼스 · 중구',     region:'도심 · 서북권'},
+        {id:'uni-sookmyung',name:'숙명여자대학교', en:'용산',                  region:'도심 · 서북권'},
+        {id:'uni-yonsei',   name:'연세대학교',     en:'신촌캠퍼스 · 서대문',   region:'도심 · 서북권'},
+        {id:'uni-ewha',     name:'이화여자대학교', en:'서대문',                region:'도심 · 서북권'},
+        {id:'uni-mju',      name:'명지대학교',     en:'인문캠퍼스 · 서대문',   region:'도심 · 서북권'},
+        {id:'uni-chugye',   name:'추계예술대학교', en:'서대문',                region:'도심 · 서북권'},
+        {id:'uni-mtu',      name:'감리교신학대학교', en:'서대문',              region:'도심 · 서북권'},
+        {id:'uni-sogang',   name:'서강대학교',     en:'마포',                  region:'도심 · 서북권'},
+        {id:'uni-hongik',   name:'홍익대학교',     en:'서울캠퍼스 · 마포',     region:'도심 · 서북권'},
+        {id:'uni-scu',      name:'서울기독대학교', en:'은평',                  region:'도심 · 서북권'},
+
+        {id:'uni-korea',    name:'고려대학교',     en:'안암캠퍼스 · 성북',     region:'동북권'},
+        {id:'uni-kookmin',  name:'국민대학교',     en:'성북',                  region:'동북권'},
+        {id:'uni-sungshin', name:'성신여자대학교', en:'성북',                  region:'동북권'},
+        {id:'uni-hansung',  name:'한성대학교',     en:'성북',                  region:'동북권'},
+        {id:'uni-skuniv',   name:'서경대학교',     en:'성북',                  region:'동북권'},
+        {id:'uni-dongduk',  name:'동덕여자대학교', en:'성북',                  region:'동북권'},
+        {id:'uni-karts',    name:'한국예술종합학교', en:'석관캠퍼스 · 성북',   region:'동북권'},
+        {id:'uni-khu',      name:'경희대학교',     en:'서울캠퍼스 · 동대문',   region:'동북권'},
+        {id:'uni-hufs',     name:'한국외국어대학교', en:'서울캠퍼스 · 동대문', region:'동북권'},
+        {id:'uni-uos',      name:'서울시립대학교', en:'동대문',                region:'동북권'},
+        {id:'uni-hanyang',  name:'한양대학교',     en:'서울캠퍼스 · 성동',     region:'동북권'},
+        {id:'uni-konkuk',   name:'건국대학교',     en:'서울캠퍼스 · 광진',     region:'동북권'},
+        {id:'uni-sejong',   name:'세종대학교',     en:'광진',                  region:'동북권'},
+        {id:'uni-puts',     name:'장로회신학대학교', en:'광진',                region:'동북권'},
+        {id:'uni-kw',       name:'광운대학교',     en:'노원',                  region:'동북권'},
+        {id:'uni-seoultech',name:'서울과학기술대학교', en:'노원',              region:'동북권'},
+        {id:'uni-swu',      name:'서울여자대학교', en:'노원',                  region:'동북권'},
+        {id:'uni-syu',      name:'삼육대학교',     en:'노원',                  region:'동북권'},
+        {id:'uni-bible',    name:'한국성서대학교', en:'노원',                  region:'동북권'},
+        {id:'uni-duksung',  name:'덕성여자대학교', en:'도봉',                  region:'동북권'},
+
+        {id:'uni-snu',      name:'서울대학교',     en:'관악캠퍼스 · 관악',     region:'서남 · 동남권'},
+        {id:'uni-cau',      name:'중앙대학교',     en:'서울캠퍼스 · 동작',     region:'서남 · 동남권'},
+        {id:'uni-ssu',      name:'숭실대학교',     en:'동작',                  region:'서남 · 동남권'},
+        {id:'uni-chongshin',name:'총신대학교',     en:'동작',                  region:'서남 · 동남권'},
+        {id:'uni-snue',     name:'서울교육대학교', en:'서초',                  region:'서남 · 동남권'},
+        {id:'uni-knsu',     name:'한국체육대학교', en:'송파',                  region:'서남 · 동남권'},
+        {id:'uni-skhu',     name:'성공회대학교',   en:'구로',                  region:'서남 · 동남권'},
+        {id:'uni-hytu',     name:'서울한영대학교', en:'구로',                  region:'서남 · 동남권'},
+        {id:'uni-kangseo',  name:'강서대학교',     en:'강서',                  region:'서남 · 동남권'}
+      ]
+    }
+  ];
+</script>
+<style>
+  :root{
+    --river-deep:#0E2F36; --river-glow:#1B5964; --gold:#C99A3E; --paper:#F1E9D8;
+    --ink:#1C2B2B; --ink-soft:#5B6B62; --stamp:#B3392C; --card-border:#D8C9A0;
+    --font-head:'Gowun Batang','Noto Serif KR',serif;
+    --font-body:'Noto Sans KR',-apple-system,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --river-deep:#081C20; --river-glow:#12414A; --paper:#E7DAB8; --ink:#20302F; --card-border:#C7B587; }
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:radial-gradient(1200px 500px at 50% -10%, var(--river-glow), transparent 60%), var(--river-deep);
+    background-attachment:fixed;
+    color:var(--paper); font-family:var(--font-body); line-height:1.5; -webkit-font-smoothing:antialiased; min-height:100vh;
+  }
+
+  /* ---------- Tabs ---------- */
+  .tabs-wrap{position:sticky; top:0; z-index:10; background:rgba(14,47,54,.88); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border-bottom:1px solid rgba(201,154,62,.25);}
+  .tabs{max-width:920px; margin:0 auto; display:flex; gap:6px; padding:10px 16px; overflow-x:auto; scrollbar-width:none;}
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{flex:0 0 auto; display:flex; align-items:center; gap:8px; background:none; border:1px solid rgba(241,233,216,.22); color:rgba(241,233,216,.75); font:inherit; font-size:13.5px; font-weight:500; padding:7px 14px; border-radius:99px; cursor:pointer; transition:all .2s; white-space:nowrap;}
+  .tab:hover{border-color:rgba(201,154,62,.6); color:var(--paper);}
+  .tab[aria-selected="true"]{background:var(--gold); border-color:var(--gold); color:#1C2B2B;}
+  .tab-count{font-size:11px; font-variant-numeric:tabular-nums; opacity:.75;}
+
+  .page{max-width:920px; margin:0 auto; padding:40px 16px 80px;}
+  .hero{text-align:center; margin-bottom:36px;}
+  .hero h1{font-family:var(--font-head); font-weight:700; font-size:clamp(28px,6vw,42px); margin:0 0 10px;}
+  .hero .lede{color:rgba(241,233,216,.78); font-size:15px; max-width:440px; margin:0 auto 28px;}
+  .celebrate{display:none; margin:0 auto 20px; max-width:440px; background:rgba(201,154,62,.15); border:1px solid var(--gold); color:var(--gold); border-radius:10px; padding:10px 16px; font-size:14px; font-weight:500;}
+  .celebrate.show{display:block;}
+  .progress-wrap{max-width:360px; margin:0 auto 24px;}
+  .progress-track{height:8px; border-radius:99px; background:rgba(241,233,216,.14); overflow:hidden;}
+  .progress-fill{height:100%; width:0%; border-radius:99px; background:linear-gradient(90deg,var(--river-glow),var(--gold)); transition:width .45s ease;}
+  .progress-label{margin:8px 0 0; font-size:13px; color:rgba(241,233,216,.7); font-variant-numeric:tabular-nums;}
+  .bead-row{display:flex; justify-content:center; gap:8px; flex-wrap:wrap; max-width:560px; margin:0 auto;}
+  .bead{width:11px; height:11px; border-radius:50%; background:rgba(241,233,216,.2); border:1.5px solid rgba(241,233,216,.35); transition:all .3s;}
+  .bead.done{background:var(--gold); border-color:var(--gold); transform:scale(1.15);}
+  .sync-status{margin:14px 0 0; font-size:11.5px; color:rgba(241,233,216,.45);}
+
+  .nick{display:flex; justify-content:center; align-items:center; gap:8px; margin-top:14px; font-size:12.5px; color:rgba(241,233,216,.7);}
+  .nick input{width:120px; background:rgba(241,233,216,.08); border:1px solid rgba(241,233,216,.25); color:var(--paper); border-radius:6px; padding:5px 8px; font:inherit;}
+  .nick input:focus{outline:none; border-color:var(--gold);}
+
+  .region-block{margin-top:38px;}
+  .region-title{display:flex; justify-content:space-between; font-weight:700; font-size:13px; color:var(--gold); margin:0 0 14px; padding-bottom:8px; border-bottom:1px solid rgba(201,154,62,.3);}
+  .region-title span{font-weight:500; opacity:.7; font-variant-numeric:tabular-nums;}
+  .card-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px;}
+  .card{position:relative; text-align:left; background:var(--paper); color:var(--ink); border:1.5px dashed var(--card-border); border-radius:6px; padding:16px 16px 14px; cursor:pointer; font-family:inherit; overflow:hidden; transition:transform .15s, box-shadow .2s; -webkit-tap-highlight-color:transparent; min-height:96px;}
+  .card:hover{transform:translateY(-2px);}
+  .card:focus-visible{outline:2px solid var(--gold); outline-offset:2px;}
+  .card.is-visited{border-style:solid; box-shadow:0 6px 18px rgba(0,0,0,.25);}
+  .card-index{font-size:11px; font-weight:700; color:var(--ink-soft); letter-spacing:.04em;}
+  .card-name{display:block; font-family:var(--font-head); font-size:19px; font-weight:700; margin:2px 0 1px; padding-right:4px;}
+  .card-en{display:block; font-size:11px; color:var(--ink-soft); margin-bottom:8px;}
+  .card-note{display:block; font-size:13px; opacity:.85; line-height:1.45; padding-right:4px;}
+  .card-hint{display:block; margin-top:10px; font-size:12px; color:var(--ink-soft);}
+  .card.is-visited .card-hint{display:none;}
+  .card.is-visited .card-name,.card.is-visited .card-note{padding-right:78px;}
+  .stamp{display:none; position:absolute; top:14px; right:14px; width:74px; height:74px; border-radius:50%; border:2.5px double var(--stamp); color:var(--stamp); transform:rotate(-11deg); align-items:center; justify-content:center; flex-direction:column; text-align:center; mix-blend-mode:multiply;}
+  .card.is-visited .stamp{display:flex;}
+  .stamp-word{font-family:var(--font-head); font-weight:700; font-size:15px; line-height:1.1;}
+  .stamp-date{font-size:8.5px; margin-top:2px;}
+  .stamp-by{font-size:8px; margin-top:1px; opacity:.85; max-width:62px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  @keyframes stampDown{0%{transform:rotate(-11deg) scale(2.4);opacity:0}60%{transform:rotate(-11deg) scale(.92);opacity:1}100%{transform:rotate(-11deg) scale(1);opacity:1}}
+  .stamp.pop{animation:stampDown .32s ease-out;}
+  footer{margin-top:48px; text-align:center;}
+  .reset-btn{background:none; border:1px solid rgba(241,233,216,.3); color:rgba(241,233,216,.6); font:inherit; font-size:12.5px; padding:9px 16px; border-radius:99px; cursor:pointer;}
+  .reset-btn:hover,.reset-btn.confirming{border-color:var(--stamp); color:var(--stamp);}
+  @media (max-width:420px){
+    .card-grid{grid-template-columns:1fr;}
+    .stamp{width:64px;height:64px;top:12px;right:12px;}
+    .card.is-visited .card-name,.card.is-visited .card-note{padding-right:68px;}
+  }
+</style>
+</head>
+<body>
+<nav class="tabs-wrap"><div class="tabs" id="tabs" role="tablist"></div></nav>
+<div class="page">
+  <header class="hero">
+    <h1 id="title"></h1>
+    <p class="lede" id="lede"></p>
+    <p class="celebrate" id="celebrate"></p>
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <p class="progress-label" id="progressLabel"></p>
+    </div>
+    <div class="bead-row" id="beadRow"></div>
+    <label class="nick">내 이름 <input id="nickInput" maxlength="12" placeholder="도장에 표시돼요"></label>
+    <p class="sync-status" id="syncStatus"></p>
+  </header>
+  <main id="main"></main>
+  <footer><button class="reset-btn" id="resetBtn" type="button">이 탭 기록 초기화</button></footer>
+</div>
+
+<script>
+(function(){
+  var COLS = window.COLLECTIONS;
+  var LS_STATE='hangang-dojang-v1', LS_NICK='hangang-dojang-nick', LS_TAB='dojang-tab';
+  var cfg = window.DOJANG_CONFIG || {};
+  var sb = null;
+  var state = {};               // { item_id: {date, by_name} } — 모든 탭 공용
+  var cur = null;               // 현재 컬렉션
+
+  function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+  function today(){ var d=new Date(); return d.getFullYear()+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+String(d.getDate()).padStart(2,'0'); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function countDone(col){ return col.items.filter(function(it){ return state[it.id]; }).length; }
+
+  var $ = function(id){ return document.getElementById(id); };
+  var tabsEl=$('tabs'), main=$('main'), beadRow=$('beadRow'), nickInput=$('nickInput');
+
+  nickInput.value = lsGet(LS_NICK) || '';
+  nickInput.addEventListener('input', function(){ lsSet(LS_NICK, nickInput.value.trim()); });
+
+  // ---------- tabs ----------
+  COLS.forEach(function(col){
+    var t=document.createElement('button');
+    t.className='tab'; t.type='button'; t.setAttribute('role','tab'); t.dataset.col=col.id;
+    t.innerHTML=esc(col.tab)+'<span class="tab-count"></span>';
+    t.addEventListener('click', function(){ select(col.id, true); });
+    tabsEl.appendChild(t);
+  });
+
+  function select(id, userAction){
+    cur = COLS.filter(function(c){ return c.id===id; })[0] || COLS[0];
+    lsSet(LS_TAB, cur.id);
+    if(location.hash !== '#'+cur.id) history.replaceState(null,'','#'+cur.id);
+    document.title = cur.title;
+    tabsEl.querySelectorAll('.tab').forEach(function(t){
+      var on = t.dataset.col===cur.id; t.setAttribute('aria-selected', on?'true':'false');
+      if(on && userAction) t.scrollIntoView({block:'nearest', inline:'nearest', behavior:'smooth'});
+    });
+    buildPanel();
+    render();
+    if(userAction) window.scrollTo({top:0});
+  }
+
+  function buildPanel(){
+    $('title').textContent = cur.title;
+    $('lede').textContent = cur.lede || '';
+    $('celebrate').textContent = cur.done || '🎉 완주!';
+    main.innerHTML=''; beadRow.innerHTML='';
+    var region=null, grid=null;
+    cur.items.forEach(function(it,i){
+      if(it.region!==region){
+        region=it.region;
+        var sec=document.createElement('section'); sec.className='region-block';
+        var h=document.createElement('h2'); h.className='region-title'; h.dataset.region=region;
+        h.innerHTML=esc(region)+'<span></span>';
+        grid=document.createElement('div'); grid.className='card-grid';
+        sec.appendChild(h); sec.appendChild(grid); main.appendChild(sec);
+      }
+      var b=document.createElement('button'); b.className='card'; b.type='button'; b.dataset.id=it.id; b.setAttribute('aria-pressed','false');
+      b.innerHTML='<span class="card-index">'+String(i+1).padStart(2,'0')+'</span>'+
+        '<span class="card-name">'+esc(it.name)+'</span>'+
+        (it.en?'<span class="card-en">'+esc(it.en)+'</span>':'')+
+        (it.note?'<span class="card-note">'+esc(it.note)+'</span>':'')+
+        '<span class="card-hint">탭하여 도장 찍기</span>'+
+        '<span class="stamp"><span class="stamp-word">방문완료</span><span class="stamp-date"></span><span class="stamp-by"></span></span>';
+      grid.appendChild(b);
+      var bead=document.createElement('span'); bead.className='bead'; bead.dataset.id=it.id; beadRow.appendChild(bead);
+    });
+  }
+
+  function render(){
+    // tab counts
+    COLS.forEach(function(col){
+      var el=tabsEl.querySelector('[data-col="'+col.id+'"] .tab-count');
+      if(el) el.textContent=countDone(col)+'/'+col.items.length;
+    });
+    if(!cur) return;
+    var n=0, perRegion={};
+    cur.items.forEach(function(it){
+      var v=state[it.id];
+      var card=main.querySelector('.card[data-id="'+it.id+'"]'), bead=beadRow.querySelector('.bead[data-id="'+it.id+'"]');
+      perRegion[it.region]=perRegion[it.region]||[0,0]; perRegion[it.region][1]++;
+      if(v){ n++; perRegion[it.region][0]++; }
+      card.classList.toggle('is-visited',!!v); card.setAttribute('aria-pressed',v?'true':'false');
+      if(v){
+        card.querySelector('.stamp-date').textContent=v.date||'';
+        card.querySelector('.stamp-by').textContent=v.by_name ? v.by_name+' 방문' : (sb?'함께 방문':'');
+      }
+      bead.classList.toggle('done',!!v);
+    });
+    main.querySelectorAll('.region-title').forEach(function(h){
+      var r=perRegion[h.dataset.region]; h.querySelector('span').textContent=r[0]+' / '+r[1];
+    });
+    var total=cur.items.length;
+    $('progressFill').style.width=(n/total*100)+'%';
+    $('progressLabel').textContent=n+' / '+total+' 완료';
+    $('celebrate').classList.toggle('show', n===total);
+  }
+
+  // ---------- storage ----------
+  async function loadRemote(){
+    var r=await sb.from('visits').select('park_id,date,by_name');
+    if(r.error) throw r.error;
+    var s={}; (r.data||[]).forEach(function(row){ s[row.park_id]={date:row.date, by_name:row.by_name}; });
+    return s;
+  }
+  async function stampRemote(id,v){
+    var r = v ? await sb.from('visits').upsert({park_id:id, date:v.date, by_name:v.by_name||null})
+              : await sb.from('visits').delete().eq('park_id',id);
+    if(r.error) throw r.error;
+  }
+  async function resetRemote(ids){
+    var r=await sb.from('visits').delete().in('park_id', ids); if(r.error) throw r.error;
+  }
+  function saveLocal(){ lsSet(LS_STATE, JSON.stringify(state)); }
+  function setStatus(t){ $('syncStatus').textContent=t; }
+
+  // ---------- events ----------
+  main.addEventListener('click', async function(e){
+    var card=e.target.closest('.card'); if(!card) return;
+    var id=card.dataset.id, prev=state[id];
+    var next = prev ? null : {date:today(), by_name:nickInput.value.trim()||null};
+    if(next) state[id]=next; else delete state[id];
+    render();
+    if(next){ var st=card.querySelector('.stamp'); st.classList.remove('pop'); void st.offsetWidth; st.classList.add('pop'); }
+    if(sb){
+      try{ await stampRemote(id,next); }
+      catch(err){ console.error(err); if(prev) state[id]=prev; else delete state[id]; render(); setStatus('저장 실패 — 잠시 후 다시 시도해 주세요'); }
+    } else saveLocal();
+  });
+
+  var resetBtn=$('resetBtn'), confirming=false, timer=null;
+  function resetLabel(){ confirming=false; resetBtn.textContent='이 탭 기록 초기화'; resetBtn.classList.remove('confirming'); }
+  resetBtn.addEventListener('click', async function(){
+    if(!confirming){
+      confirming=true; resetBtn.textContent='「'+cur.tab+'」 기록을 지울까요? 다시 누르면 삭제돼요'; resetBtn.classList.add('confirming');
+      timer=setTimeout(resetLabel,3000); return;
+    }
+    clearTimeout(timer); resetLabel();
+    var ids=cur.items.map(function(it){ return it.id; });
+    ids.forEach(function(id){ delete state[id]; }); render();
+    if(sb){ try{ await resetRemote(ids); }catch(e){ console.error(e); state=await loadRemote(); render(); } }
+    else saveLocal();
+  });
+
+  window.addEventListener('hashchange', function(){ select(location.hash.slice(1), false); });
+
+  // ---------- init ----------
+  async function init(){
+    var start = location.hash.slice(1) || lsGet(LS_TAB) || COLS[0].id;
+    select(start, false);
+    if(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY && window.supabase){
+      try{
+        sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+        state = await loadRemote();
+        setStatus('이 링크에 접속한 사람과 하나의 기록을 함께 써요');
+        sb.channel('visits-live')
+          .on('postgres_changes',{event:'*',schema:'public',table:'visits'}, async function(){
+            try{ state=await loadRemote(); render(); }catch(e){}
+          }).subscribe();
+      }catch(e){
+        console.error(e); sb=null;
+        try{ state=JSON.parse(lsGet(LS_STATE)||'{}'); }catch(_){ state={}; }
+        setStatus('서버 연결 실패 — 이 브라우저에만 저장돼요');
+      }
+    } else {
+      try{ state=JSON.parse(lsGet(LS_STATE)||'{}'); }catch(e){ state={}; }
+      setStatus('이 브라우저에만 저장돼요 (서버 미설정)');
+    }
+    render();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
